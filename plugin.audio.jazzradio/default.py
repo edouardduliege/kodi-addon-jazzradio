@@ -255,6 +255,7 @@ def play_linear(
         "channel_key": channel,
         "channel_name": name,
         "channel_id": int(channel_id) if channel_id else None,
+        "stream_url": stream_url,
         "channel_art": channel_art or "",
         "channel_fanart": channel_fanart or channel_art or "",
         "track_id": (
