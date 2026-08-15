@@ -14,7 +14,7 @@ ADDON_ID = "plugin.audio.jazzradio"
 ADDON = xbmcaddon.Addon(ADDON_ID)
 
 
-class DIFMPlayer(xbmc.Player):
+class JazzRadioPlayer(xbmc.Player):
     def __init__(self):
         super().__init__()
 
@@ -97,7 +97,7 @@ def update_linear_metadata(client, player, state):
 
 def main():
     monitor = xbmc.Monitor()
-    player = DIFMPlayer()
+    player = JazzRadioPlayer()
     client = None
 
     while not monitor.abortRequested():
