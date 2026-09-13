@@ -99,3 +99,17 @@ Kodi's v2 add-on settings format requires empty editable string fields to use
 a self-closing `<default/>` and `<constraints><allowempty>true</allowempty></constraints>`.
 This restores the visible JazzRadio/AudioAddict e-mail field and masked
 password field while preserving the existing setting IDs.
+
+## 0.6.3 stability and maintenance update
+
+* Reduces unnecessary AudioAddict API calls during Now Playing updates.
+* Reuses the current session directly and only re-authenticates after HTTP 401/403.
+* Fetches detailed track metadata only when the current track changes.
+* Improves favourites error handling so API failures are no longer treated as an empty favourites list.
+* Refreshes the Kodi directory after adding or removing a favourite.
+* Improves user-facing error handling while keeping technical details in the Kodi log.
+* Opens add-on settings and exits cleanly when account credentials are missing.
+* Uses the add-on version dynamically in the HTTP User-Agent.
+* Removes unused interactive/V2 localisation strings and redundant player code.
+* Adds additional logging for previously silent file/state errors.
+
