@@ -53,8 +53,9 @@ class AudioAddictClient:
 
         self.session_path = Path(profile) / "session.json"
         self.http = requests.Session()
+        version = self.addon.getAddonInfo("version")
         self.http.headers.update({
-            "User-Agent": "Kodi JazzRadio/0.6.0",
+            "User-Agent": f"Kodi JazzRadio/{version}",
             "Accept": "application/json, */*",
         })
         self._session = self._load_session()
@@ -99,8 +100,11 @@ class AudioAddictClient:
         )
         try:
             os.chmod(self.session_path, 0o600)
-        except Exception:
-            pass
+        except Exception as exc:
+            self._log(
+                f"Unable to restrict session cache permissions: {exc}",
+                xbmc.LOGWARNING,
+            )
         self._session = data
 
     def _clear_session(self):
@@ -109,8 +113,11 @@ class AudioAddictClient:
         try:
             if self.session_path.exists():
                 self.session_path.unlink()
-        except Exception:
-            pass
+        except Exception as exc:
+            self._log(
+                f"Unable to remove session cache: {exc}",
+                xbmc.LOGWARNING,
+            )
 
     def _login(self):
         """Create and cache a fresh AudioAddict member session."""
@@ -179,27 +186,14 @@ class AudioAddictClient:
         return data
 
     def _ensure_session(self):
-        """Reuse a valid session and transparently re-login after 401/403."""
+        """Reuse a cached session, logging in only when none is available.
+
+        Session validity is checked by the actual API request.  `_get()` and
+        `_write()` transparently re-login and retry once after HTTP 401/403,
+        avoiding a separate validation request before every authenticated call.
+        """
         if self._session and self._session.get("session_key"):
-            try:
-                response = self.http.get(
-                    f"{self.API}/{self.NETWORK}/currently_playing",
-                    headers={
-                        "X-Session-Key": self._session["session_key"]
-                    },
-                    timeout=12,
-                )
-                if response.status_code == 200:
-                    return self._session
-
-                # Do not create login storms for temporary server failures.
-                if response.status_code not in (401, 403):
-                    return self._session
-            except requests.RequestException:
-                return self._session
-
-            self._clear_session()
-
+            return self._session
         return self._login()
 
     def _get(self, path, authenticated=True, timeout=20):
@@ -352,8 +346,14 @@ class AudioAddictClient:
             ),
         )
 
-    def current_track(self, channel_key):
-        """Return rich Now Playing metadata for one linear JazzRadio channel."""
+    def current_track(self, channel_key, known_track_id=None):
+        """Return Now Playing metadata for one linear JazzRadio channel.
+
+        The lightweight `/currently_playing` response is always sufficient to
+        detect a track change.  Rich `/tracks/{id}` metadata is fetched only
+        when the track differs from ``known_track_id`` (or when no known ID is
+        supplied, as during initial playback).
+        """
         try:
             now_playing = self._get("/currently_playing")
         except AudioAddictError:
@@ -377,7 +377,7 @@ class AudioAddictClient:
             result["channel_id"] = item.get("channel_id")
 
             track_id = track.get("id")
-            if track_id:
+            if track_id and track_id != known_track_id:
                 try:
                     details = self._get(f"/tracks/{track_id}")
                     if isinstance(details, dict):

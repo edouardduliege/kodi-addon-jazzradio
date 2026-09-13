@@ -75,13 +75,9 @@ def add_channel(channel, favorite_ids=None):
     tag.setArtist("JazzRadio")
     li.setProperty("IsPlayable", "true")
 
-    if cid is not None:
-        isfav = favorite_ids is not None and cid in favorite_ids
-        favlabel = (
-            t(32042)
-            if isfav else
-            t(32041)
-        )
+    if cid is not None and favorite_ids is not None:
+        isfav = cid in favorite_ids
+        favlabel = t(32042) if isfav else t(32041)
         favaction = "favorite_remove" if isfav else "favorite_add"
         li.addContextMenuItems([
             (
@@ -126,8 +122,9 @@ def root(client):
 def favorite_ids(client):
     try:
         return client.favorite_channel_ids()
-    except AudioAddictError:
-        return set()
+    except AudioAddictError as exc:
+        log(f"Unable to retrieve favorites: {exc}", xbmc.LOGWARNING)
+        return None
 
 
 def list_filter(client, key):
@@ -227,6 +224,7 @@ def change_favorite(client, channel_id, add):
         1600,
         False,
     )
+    xbmc.executebuiltin("Container.Refresh")
 
 
 def play_linear(
@@ -313,6 +311,10 @@ def run():
                     t(32030),
                 )
                 ADDON.openSettings()
+                xbmcplugin.endOfDirectory(
+                    HANDLE, succeeded=True, cacheToDisc=False
+                )
+                return
             root(client)
 
         elif action == "all":
@@ -352,22 +354,18 @@ def run():
             xbmcplugin.endOfDirectory(
                 HANDLE, succeeded=False, cacheToDisc=False
             )
-        except Exception:
-            pass
+        except Exception as end_exc:
+            log(f"Unable to close failed directory: {end_exc!r}", xbmc.LOGDEBUG)
 
     except Exception as exc:
         log(f"Unhandled error: {exc!r}", xbmc.LOGERROR)
-        xbmcgui.Dialog().ok(
-            "JazzRadio",
-            t(32031)
-            + f"\n\n{exc}",
-        )
+        xbmcgui.Dialog().ok("JazzRadio", t(32031))
         try:
             xbmcplugin.endOfDirectory(
                 HANDLE, succeeded=False, cacheToDisc=False
             )
-        except Exception:
-            pass
+        except Exception as end_exc:
+            log(f"Unable to close failed directory: {end_exc!r}", xbmc.LOGDEBUG)
 
 
 if __name__ == "__main__":

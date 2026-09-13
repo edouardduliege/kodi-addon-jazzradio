@@ -1,0 +1,507 @@
+[1mdiff --git a/plugin.audio.jazzradio/addon.xml b/plugin.audio.jazzradio/addon.xml[m
+[1mindex 4a5b994..783d3a8 100644[m
+[1m--- a/plugin.audio.jazzradio/addon.xml[m
+[1m+++ b/plugin.audio.jazzradio/addon.xml[m
+[36m@@ -1,11 +1,11 @@[m
+ <?xml version="1.0" encoding="UTF-8" standalone="yes"?>[m
+ <addon id="plugin.audio.jazzradio" name="JazzRadio" version="0.6.3" provider-name="Community">[m
+   <requires>[m
+[31m-    <import addon="xbmc.python" version="3.0.0"/>[m
+[32m+[m[32m    <import addon="xbmc.python" version="3.0.1"/>[m
+     <import addon="script.module.requests" version="2.22.0"/>[m
+   </requires>[m
+   <extension point="xbmc.python.pluginsource" library="default.py"><provides>audio</provides></extension>[m
+[31m-  <extension point="xbmc.service" library="service.py" start="login"/>[m
+[32m+[m[32m  <extension point="xbmc.service" library="service.py"/>[m
+   <extension point="xbmc.addon.metadata">[m
+     <summary lang="en_GB">Unofficial JazzRadio client for Kodi</summary>[m
+     <summary lang="fr_FR">Client JazzRadio non officiel pour Kodi</summary>[m
+[36m@@ -16,7 +16,7 @@[m
+     <platform>all</platform>[m
+     <license>GPL-3.0-or-later</license>[m
+     <website>https://www.jazzradio.com/</website>[m
+[31m-    <news>v0.6.2 (2026-08-13) - Fix Kodi v2 string settings schema with allowempty constraints.</news>[m
+[32m+[m[32m    <news>v0.6.3 (2026-09-12) - Reduce metadata API traffic, improve favorites handling, error reporting and session reuse.</news>[m
+     <assets><icon>resources/icon.png</icon><fanart>resources/fanart.jpg</fanart></assets>[m
+   </extension>[m
+ </addon>[m
+[1mdiff --git a/plugin.audio.jazzradio/default.py b/plugin.audio.jazzradio/default.py[m
+[1mindex 0ac7aea..d50e136 100644[m
+[1m--- a/plugin.audio.jazzradio/default.py[m
+[1m+++ b/plugin.audio.jazzradio/default.py[m
+[36m@@ -75,13 +75,9 @@[m [mdef add_channel(channel, favorite_ids=None):[m
+     tag.setArtist("JazzRadio")[m
+     li.setProperty("IsPlayable", "true")[m
+ [m
+[31m-    if cid is not None:[m
+[31m-        isfav = favorite_ids is not None and cid in favorite_ids[m
+[31m-        favlabel = ([m
+[31m-            t(32042)[m
+[31m-            if isfav else[m
+[31m-            t(32041)[m
+[31m-        )[m
+[32m+[m[32m    if cid is not None and favorite_ids is not None:[m
+[32m+[m[32m        isfav = cid in favorite_ids[m
+[32m+[m[32m        favlabel = t(32042) if isfav else t(32041)[m
+         favaction = "favorite_remove" if isfav else "favorite_add"[m
+         li.addContextMenuItems([[m
+             ([m
+[36m@@ -126,8 +122,9 @@[m [mdef root(client):[m
+ def favorite_ids(client):[m
+     try:[m
+         return client.favorite_channel_ids()[m
+[31m-    except AudioAddictError:[m
+[31m-        return set()[m
+[32m+[m[32m    except AudioAddictError as exc:[m
+[32m+[m[32m        log(f"Unable to retrieve favorites: {exc}", xbmc.LOGWARNING)[m
+[32m+[m[32m        return None[m
+ [m
+ [m
+ def list_filter(client, key):[m
+[36m@@ -227,6 +224,7 @@[m [mdef change_favorite(client, channel_id, add):[m
+         1600,[m
+         False,[m
+     )[m
+[32m+[m[32m    xbmc.executebuiltin("Container.Refresh")[m
+ [m
+ [m
+ def play_linear([m
+[36m@@ -313,6 +311,10 @@[m [mdef run():[m
+                     t(32030),[m
+                 )[m
+                 ADDON.openSettings()[m
+[32m+[m[32m                xbmcplugin.endOfDirectory([m
+[32m+[m[32m                    HANDLE, succeeded=True, cacheToDisc=False[m
+[32m+[m[32m                )[m
+[32m+[m[32m                return[m
+             root(client)[m
+ [m
+         elif action == "all":[m
+[36m@@ -352,22 +354,18 @@[m [mdef run():[m
+             xbmcplugin.endOfDirectory([m
+                 HANDLE, succeeded=False, cacheToDisc=False[m
+             )[m
+[31m-        except Exception:[m
+[31m-            pass[m
+[32m+[m[32m        except Exception as end_exc:[m
+[32m+[m[32m            log(f"Unable to close failed directory: {end_exc!r}", xbmc.LOGDEBUG)[m
+ [m
+     except Exception as exc:[m
+         log(f"Unhandled error: {exc!r}", xbmc.LOGERROR)[m
+[31m-        xbmcgui.Dialog().ok([m
+[31m-            "JazzRadio",[m
+[31m-            t(32031)[m
+[31m-            + f"\n\n{exc}",[m
+[31m-        )[m
+[32m+[m[32m        xbmcgui.Dialog().ok("JazzRadio", t(32031))[m
+         try:[m
+             xbmcplugin.endOfDirectory([m
+                 HANDLE, succeeded=False, cacheToDisc=False[m
+             )[m
+[31m-        except Exception:[m
+[31m-            pass[m
+[32m+[m[32m        except Exception as end_exc:[m
+[32m+[m[32m            log(f"Unable to close failed directory: {end_exc!r}", xbmc.LOGDEBUG)[m
+ [m
+ [m
+ if __name__ == "__main__":[m
+[1mdiff --git a/plugin.audio.jazzradio/resources/language/resource.language.en_gb/strings.po b/plugin.audio.jazzradio/resources/language/resource.language.en_gb/strings.po[m
+[1mindex 971b337..15c4bc0 100644[m
+[1m--- a/plugin.audio.jazzradio/resources/language/resource.language.en_gb/strings.po[m
+[1m+++ b/plugin.audio.jazzradio/resources/language/resource.language.en_gb/strings.po[m
+[36m@@ -111,71 +111,6 @@[m [mmsgctxt "#32045"[m
+ msgid "Removed from favorites."[m
+ msgstr "Removed from favorites."[m
+ [m
+[31m-[m
+[31m-msgctxt "#32050"[m
+[31m-msgid "Like current track"[m
+[31m-msgstr "Like current track"[m
+[31m-[m
+[31m-msgctxt "#32051"[m
+[31m-msgid "Dislike current track"[m
+[31m-msgstr "Dislike current track"[m
+[31m-[m
+[31m-msgctxt "#32052"[m
+[31m-msgid "Clear current vote"[m
+[31m-msgstr "Clear current vote"[m
+[31m-[m
+[31m-msgctxt "#32053"[m
+[31m-msgid "Skip / Next interactive track"[m
+[31m-msgstr "Skip / Next interactive track"[m
+[31m-[m
+[31m-msgctxt "#32054"[m
+[31m-msgid "Play interactively"[m
+[31m-msgstr "Play interactively"[m
+[31m-[m
+[31m-msgctxt "#32055"[m
+[31m-msgid "Interactive playback started."[m
+[31m-msgstr "Interactive playback started."[m
+[31m-[m
+[31m-msgctxt "#32056"[m
+[31m-msgid "No JazzRadio track is currently known."[m
+[31m-msgstr "No JazzRadio track is currently known."[m
+[31m-[m
+[31m-msgctxt "#32057"[m
+[31m-msgid "Track liked."[m
+[31m-msgstr "Track liked."[m
+[31m-[m
+[31m-msgctxt "#32058"[m
+[31m-msgid "Track disliked."[m
+[31m-msgstr "Track disliked."[m
+[31m-[m
+[31m-msgctxt "#32059"[m
+[31m-msgid "Vote cleared."[m
+[31m-msgstr "Vote cleared."[m
+[31m-[m
+[31m-msgctxt "#32060"[m
+[31m-msgid "Skip is available in interactive playback mode."[m
+[31m-msgstr "Skip is available in interactive playback mode."[m
+[31m-[m
+[31m-msgctxt "#32061"[m
+[31m-msgid "Skipped to the next interactive track."[m
+[31m-msgstr "Skipped to the next interactive track."[m
+[31m-[m
+[31m-msgctxt "#32062"[m
+[31m-msgid "skips remaining"[m
+[31m-msgstr "skips remaining"[m
+[31m-[m
+[31m-msgctxt "#32063"[m
+[31m-msgid "Playback mode"[m
+[31m-msgstr "Playback mode"[m
+[31m-[m
+[31m-msgctxt "#32064"[m
+[31m-msgid "Linear"[m
+[31m-msgstr "Linear"[m
+[31m-[m
+[31m-msgctxt "#32065"[m
+[31m-msgid "Interactive"[m
+[31m-msgstr "Interactive"[m
+[31m-[m
+ msgctxt "#32100"[m
+ msgid "JazzRadio account not configured. Open add-on settings and enter your AudioAddict email/password."[m
+ msgstr "JazzRadio account not configured. Open add-on settings and enter your AudioAddict email/password."[m
+[1mdiff --git a/plugin.audio.jazzradio/resources/language/resource.language.fr_fr/strings.po b/plugin.audio.jazzradio/resources/language/resource.language.fr_fr/strings.po[m
+[1mindex ed9a444..2f752d0 100644[m
+[1m--- a/plugin.audio.jazzradio/resources/language/resource.language.fr_fr/strings.po[m
+[1m+++ b/plugin.audio.jazzradio/resources/language/resource.language.fr_fr/strings.po[m
+[36m@@ -111,71 +111,6 @@[m [mmsgctxt "#32045"[m
+ msgid "Removed from favorites."[m
+ msgstr "Retiré des favoris."[m
+ [m
+[31m-[m
+[31m-msgctxt "#32050"[m
+[31m-msgid "Like current track"[m
+[31m-msgstr "Aimer le morceau en cours"[m
+[31m-[m
+[31m-msgctxt "#32051"[m
+[31m-msgid "Dislike current track"[m
+[31m-msgstr "Ne pas aimer le morceau en cours"[m
+[31m-[m
+[31m-msgctxt "#32052"[m
+[31m-msgid "Clear current vote"[m
+[31m-msgstr "Effacer le vote du morceau en cours"[m
+[31m-[m
+[31m-msgctxt "#32053"[m
+[31m-msgid "Skip / Next interactive track"[m
+[31m-msgstr "Passer au morceau interactif suivant"[m
+[31m-[m
+[31m-msgctxt "#32054"[m
+[31m-msgid "Play interactively"[m
+[31m-msgstr "Lire en mode interactif"[m
+[31m-[m
+[31m-msgctxt "#32055"[m
+[31m-msgid "Interactive playback started."[m
+[31m-msgstr "Lecture interactive démarrée."[m
+[31m-[m
+[31m-msgctxt "#32056"[m
+[31m-msgid "No JazzRadio track is currently known."[m
+[31m-msgstr "Aucun morceau JazzRadio en cours n’est identifié."[m
+[31m-[m
+[31m-msgctxt "#32057"[m
+[31m-msgid "Track liked."[m
+[31m-msgstr "Morceau aimé."[m
+[31m-[m
+[31m-msgctxt "#32058"[m
+[31m-msgid "Track disliked."[m
+[31m-msgstr "Morceau marqué comme non aimé."[m
+[31m-[m
+[31m-msgctxt "#32059"[m
+[31m-msgid "Vote cleared."[m
+[31m-msgstr "Vote effacé."[m
+[31m-[m
+[31m-msgctxt "#32060"[m
+[31m-msgid "Skip is available in interactive playback mode."[m
+[31m-msgstr "Le passage au morceau suivant est disponible en mode interactif."[m
+[31m-[m
+[31m-msgctxt "#32061"[m
+[31m-msgid "Skipped to the next interactive track."[m
+[31m-msgstr "Passage au morceau interactif suivant."[m
+[31m-[m
+[31m-msgctxt "#32062"[m
+[31m-msgid "skips remaining"[m
+[31m-msgstr "passages restants"[m
+[31m-[m
+[31m-msgctxt "#32063"[m
+[31m-msgid "Playback mode"[m
+[31m-msgstr "Mode de lecture"[m
+[31m-[m
+[31m-msgctxt "#32064"[m
+[31m-msgid "Linear"[m
+[31m-msgstr "Linéaire"[m
+[31m-[m
+[31m-msgctxt "#32065"[m
+[31m-msgid "Interactive"[m
+[31m-msgstr "Interactif"[m
+[31m-[m
+ msgctxt "#32100"[m
+ msgid "JazzRadio account not configured. Open add-on settings and enter your AudioAddict email/password."[m
+ msgstr "Compte JazzRadio non configuré. Ouvrez les paramètres de l’extension et saisissez votre e-mail et votre mot de passe AudioAddict."[m
+[1mdiff --git a/plugin.audio.jazzradio/resources/lib/client.py b/plugin.audio.jazzradio/resources/lib/client.py[m
+[1mindex 6c7f03f..696c81a 100644[m
+[1m--- a/plugin.audio.jazzradio/resources/lib/client.py[m
+[1m+++ b/plugin.audio.jazzradio/resources/lib/client.py[m
+[36m@@ -53,8 +53,9 @@[m [mclass AudioAddictClient:[m
+ [m
+         self.session_path = Path(profile) / "session.json"[m
+         self.http = requests.Session()[m
+[32m+[m[32m        version = self.addon.getAddonInfo("version")[m
+         self.http.headers.update({[m
+[31m-            "User-Agent": "Kodi JazzRadio/0.6.0",[m
+[32m+[m[32m            "User-Agent": f"Kodi JazzRadio/{version}",[m
+             "Accept": "application/json, */*",[m
+         })[m
+         self._session = self._load_session()[m
+[36m@@ -99,8 +100,11 @@[m [mclass AudioAddictClient:[m
+         )[m
+         try:[m
+             os.chmod(self.session_path, 0o600)[m
+[31m-        except Exception:[m
+[31m-            pass[m
+[32m+[m[32m        except Exception as exc:[m
+[32m+[m[32m            self._log([m
+[32m+[m[32m                f"Unable to restrict session cache permissions: {exc}",[m
+[32m+[m[32m                xbmc.LOGWARNING,[m
+[32m+[m[32m            )[m
+         self._session = data[m
+ [m
+     def _clear_session(self):[m
+[36m@@ -109,8 +113,11 @@[m [mclass AudioAddictClient:[m
+         try:[m
+             if self.session_path.exists():[m
+                 self.session_path.unlink()[m
+[31m-        except Exception:[m
+[31m-            pass[m
+[32m+[m[32m        except Exception as exc:[m
+[32m+[m[32m            self._log([m
+[32m+[m[32m                f"Unable to remove session cache: {exc}",[m
+[32m+[m[32m                xbmc.LOGWARNING,[m
+[32m+[m[32m            )[m
+ [m
+     def _login(self):[m
+         """Create and cache a fresh AudioAddict member session."""[m
+[36m@@ -179,27 +186,14 @@[m [mclass AudioAddictClient:[m
+         return data[m
+ [m
+     def _ensure_session(self):[m
+[31m-        """Reuse a valid session and transparently re-login after 401/403."""[m
+[31m-        if self._session and self._session.get("session_key"):[m
+[31m-            try:[m
+[31m-                response = self.http.get([m
+[31m-                    f"{self.API}/{self.NETWORK}/currently_playing",[m
+[31m-                    headers={[m
+[31m-                        "X-Session-Key": self._session["session_key"][m
+[31m-                    },[m
+[31m-                    timeout=12,[m
+[31m-                )[m
+[31m-                if response.status_code == 200:[m
+[31m-                    return self._session[m
+[31m-[m
+[31m-                # Do not create login storms for temporary server failures.[m
+[31m-                if response.status_code not in (401, 403):[m
+[31m-                    return self._session[m
+[31m-            except requests.RequestException:[m
+[31m-                return self._session[m
+[31m-[m
+[31m-            self._clear_session()[m
+[32m+[m[32m        """Reuse a cached session, logging in only when none is available.[m
+ [m
+[32m+[m[32m        Session validity is checked by the actual API request.  `_get()` and[m
+[32m+[m[32m        `_write()` transparently re-login and retry once after HTTP 401/403,[m
+[32m+[m[32m        avoiding a separate validation request before every authenticated call.[m
+[32m+[m[32m        """[m
+[32m+[m[32m        if self._session and self._session.get("session_key"):[m
+[32m+[m[32m            return self._session[m
+         return self._login()[m
+ [m
+     def _get(self, path, authenticated=True, timeout=20):[m
+[36m@@ -352,8 +346,14 @@[m [mclass AudioAddictClient:[m
+             ),[m
+         )[m
+ [m
+[31m-    def current_track(self, channel_key):[m
+[31m-        """Return rich Now Playing metadata for one linear JazzRadio channel."""[m
+[32m+[m[32m    def current_track(self, channel_key, known_track_id=None):[m
+[32m+[m[32m        """Return Now Playing metadata for one linear JazzRadio channel.[m
+[32m+[m
+[32m+[m[32m        The lightweight `/currently_playing` response is always sufficient to[m
+[32m+[m[32m        detect a track change.  Rich `/tracks/{id}` metadata is fetched only[m
+[32m+[m[32m        when the track differs from ``known_track_id`` (or when no known ID is[m
+[32m+[m[32m        supplied, as during initial playback).[m
+[32m+[m[32m        """[m
+         try:[m
+             now_playing = self._get("/currently_playing")[m
+         except AudioAddictError:[m
+[36m@@ -377,7 +377,7 @@[m [mclass AudioAddictClient:[m
+             result["channel_id"] = item.get("channel_id")[m
+ [m
+             track_id = track.get("id")[m
+[31m-            if track_id:[m
+[32m+[m[32m            if track_id and track_id != known_track_id:[m
+                 try:[m
+                     details = self._get(f"/tracks/{track_id}")[m
+                     if isinstance(details, dict):[m
+[1mdiff --git a/plugin.audio.jazzradio/resources/lib/state.py b/plugin.audio.jazzradio/resources/lib/state.py[m
+[1mindex 12ae209..abd598f 100644[m
+[1m--- a/plugin.audio.jazzradio/resources/lib/state.py[m
+[1m+++ b/plugin.audio.jazzradio/resources/lib/state.py[m
+[36m@@ -7,6 +7,7 @@[m [mimport os[m
+ import time[m
+ from pathlib import Path[m
+ [m
+[32m+[m[32mimport xbmc[m
+ import xbmcaddon[m
+ import xbmcvfs[m
+ [m
+[36m@@ -28,8 +29,11 @@[m [mdef load_state():[m
+         if path.exists():[m
+             data = json.loads(path.read_text(encoding="utf-8"))[m
+             return data if isinstance(data, dict) else {}[m
+[31m-    except Exception:[m
+[31m-        pass[m
+[32m+[m[32m    except Exception as exc:[m
+[32m+[m[32m        xbmc.log([m
+[32m+[m[32m            f"[plugin.audio.jazzradio] unable to read playback state: {exc!r}",[m
+[32m+[m[32m            xbmc.LOGWARNING,[m
+[32m+[m[32m        )[m
+     return {}[m
+ [m
+ [m
+[36m@@ -45,8 +49,12 @@[m [mdef save_state(data):[m
+ [m
+     try:[m
+         os.chmod(path, 0o600)[m
+[31m-    except Exception:[m
+[31m-        pass[m
+[32m+[m[32m    except Exception as exc:[m
+[32m+[m[32m        xbmc.log([m
+[32m+[m[32m            "[plugin.audio.jazzradio] unable to restrict playback state "[m
+[32m+[m[32m            f"permissions: {exc!r}",[m
+[32m+[m[32m            xbmc.LOGWARNING,[m
+[32m+[m[32m        )[m
+ [m
+ [m
+ def clear_state():[m
+[36m@@ -55,5 +63,8 @@[m [mdef clear_state():[m
+         path = _state_path()[m
+         if path.exists():[m
+             path.unlink()[m
+[31m-    except Exception:[m
+[31m-        pass[m
+[32m+[m[32m    except Exception as exc:[m
+[32m+[m[32m        xbmc.log([m
+[32m+[m[32m            f"[plugin.audio.jazzradio] unable to clear playback state: {exc!r}",[m
+[32m+[m[32m            xbmc.LOGWARNING,[m
+[32m+[m[32m        )[m
+[1mdiff --git a/plugin.audio.jazzradio/service.py b/plugin.audio.jazzradio/service.py[m
+[1mindex 75df41a..42ff37f 100644[m
+[1m--- a/plugin.audio.jazzradio/service.py[m
+[1m+++ b/plugin.audio.jazzradio/service.py[m
+[36m@@ -3,28 +3,20 @@[m
+ from __future__ import annotations[m
+ [m
+ import xbmc[m
+[31m-import xbmcaddon[m
+ import xbmcgui[m
+ [m
+ from resources.lib.client import AudioAddictClient, AudioAddictError[m
+ from resources.lib.helpers import image_url[m
+ from resources.lib.state import load_state, save_state[m
+ [m
+[31m-ADDON_ID = "plugin.audio.jazzradio"[m
+[31m-ADDON = xbmcaddon.Addon(ADDON_ID)[m
+[31m-[m
+[31m-[m
+[31m-class JazzRadioPlayer(xbmc.Player):[m
+[31m-    def __init__(self):[m
+[31m-        super().__init__()[m
+[31m-[m
+[31m-[m
+ def update_linear_metadata(client, player, state):[m
+     channel = state.get("channel_key")[m
+     if not channel or state.get("mode") != "linear":[m
+         return[m
+ [m
+[31m-    current = client.current_track(channel)[m
+[32m+[m[32m    current = client.current_track([m
+[32m+[m[32m        channel, known_track_id=state.get("track_id")[m
+[32m+[m[32m    )[m
+     if not isinstance(current, dict) or not current.get("id"):[m
+         return[m
+ [m
+[36m@@ -44,12 +36,19 @@[m [mdef update_linear_metadata(client, player, state):[m
+     # JSON-RPC clients such as the web interface and Kore.[m
+     try:[m
+         item = player.getPlayingItem()[m
+[31m-    except Exception:[m
+[32m+[m[32m    except Exception as exc:[m
+[32m+[m[32m        xbmc.log([m
+[32m+[m[32m            f"[plugin.audio.jazzradio] unable to get playing item: {exc!r}",[m
+[32m+[m[32m            xbmc.LOGDEBUG,[m
+[32m+[m[32m        )[m
+         item = xbmcgui.ListItem()[m
+         try:[m
+             item.setPath(player.getPlayingFile())[m
+[31m-        except Exception:[m
+[31m-            pass[m
+[32m+[m[32m        except Exception as path_exc:[m
+[32m+[m[32m            xbmc.log([m
+[32m+[m[32m                f"[plugin.audio.jazzradio] unable to set playing path: {path_exc!r}",[m
+[32m+[m[32m                xbmc.LOGDEBUG,[m
+[32m+[m[32m            )[m
+ [m
+     tag = item.getMusicInfoTag()[m
+     tag.setTitle(str(title))[m
+[36m@@ -97,7 +96,7 @@[m [mdef update_linear_metadata(client, player, state):[m
+ [m
+ def main():[m
+     monitor = xbmc.Monitor()[m
+[31m-    player = JazzRadioPlayer()[m
+[32m+[m[32m    player = xbmc.Player()[m
+     client = None[m
+ [m
+     while not monitor.abortRequested():[m
+[36m@@ -109,17 +108,20 @@[m [mdef main():[m
+ [m
+             if state.get("mode") != "linear":[m
+                 continue[m
+[31m-[m
+             if not player.isPlayingAudio():[m
+                 continue[m
+[31m-[m
+             expected_stream = state.get("stream_url")[m
+[32m+[m
+             if not expected_stream:[m
+                 continue[m
+ [m
+             try:[m
+                 playing_file = player.getPlayingFile()[m
+[31m-            except Exception:[m
+[32m+[m[32m            except Exception as exc:[m
+[32m+[m[32m                xbmc.log([m
+[32m+[m[32m                    f"[plugin.audio.jazzradio] unable to read playing file: {exc!r}",[m
+[32m+[m[32m                    xbmc.LOGDEBUG,[m
+[32m+[m[32m                )[m
+                 continue[m
+ [m
+             if playing_file != expected_stream:[m

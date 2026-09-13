@@ -7,6 +7,7 @@ import os
 import time
 from pathlib import Path
 
+import xbmc
 import xbmcaddon
 import xbmcvfs
 
@@ -28,8 +29,11 @@ def load_state():
         if path.exists():
             data = json.loads(path.read_text(encoding="utf-8"))
             return data if isinstance(data, dict) else {}
-    except Exception:
-        pass
+    except Exception as exc:
+        xbmc.log(
+            f"[plugin.audio.jazzradio] unable to read playback state: {exc!r}",
+            xbmc.LOGWARNING,
+        )
     return {}
 
 
@@ -45,8 +49,12 @@ def save_state(data):
 
     try:
         os.chmod(path, 0o600)
-    except Exception:
-        pass
+    except Exception as exc:
+        xbmc.log(
+            "[plugin.audio.jazzradio] unable to restrict playback state "
+            f"permissions: {exc!r}",
+            xbmc.LOGWARNING,
+        )
 
 
 def clear_state():
@@ -55,5 +63,8 @@ def clear_state():
         path = _state_path()
         if path.exists():
             path.unlink()
-    except Exception:
-        pass
+    except Exception as exc:
+        xbmc.log(
+            f"[plugin.audio.jazzradio] unable to clear playback state: {exc!r}",
+            xbmc.LOGWARNING,
+        )
