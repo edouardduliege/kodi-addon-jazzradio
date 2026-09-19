@@ -7,7 +7,7 @@ import xbmcgui
 
 from resources.lib.client import AudioAddictClient, AudioAddictError
 from resources.lib.helpers import image_url
-from resources.lib.state import load_state, save_state
+from resources.lib.state import load_state, update_state_if_current
 
 def update_linear_metadata(client, player, state):
     channel = state.get("channel_key")
@@ -17,6 +17,24 @@ def update_linear_metadata(client, player, state):
     current = client.current_track(
         channel, known_track_id=state.get("track_id")
     )
+
+    latest_state = load_state()
+
+    if (
+        latest_state.get("mode") != "linear"
+        or latest_state.get("channel_key") != channel
+        or latest_state.get("stream_url") != state.get("stream_url")
+    ):
+        return
+
+    try:
+        if player.getPlayingFile() != state.get("stream_url"):
+            return
+    except Exception:
+        return
+
+    state = latest_state
+
     if not isinstance(current, dict) or not current.get("id"):
         return
 
@@ -77,15 +95,29 @@ def update_linear_metadata(client, player, state):
     if art:
         item.setArt(art)
 
+    try:
+        if player.getPlayingFile() != state.get("stream_url"):
+            return
+    except Exception:
+        return
+
     # updateInfoTag pushes the modified playing item back to Kodi's
     # Now Playing state after mutating title/artist/artwork above.
     player.updateInfoTag(item)
 
-    state["track_id"] = current.get("id")
-    state["title"] = title
-    state["artist"] = artist
-    state["track_art"] = thumb or ""
-    save_state(state)
+    updated = update_state_if_current(
+        state.get("stream_url"),
+        channel,
+        {
+            "track_id": current.get("id"),
+            "title": title,
+            "artist": artist,
+            "track_art": thumb or "",
+        },
+    )
+
+    if not updated:
+        return
 
     xbmc.log(
         "[plugin.audio.jazzradio] Now Playing updated: "

@@ -1,4 +1,4 @@
-# JazzRadio for Kodi — pre-V1
+# JazzRadio for Kodi — v1.0.0
 
 Unofficial community JazzRadio / AudioAddict music add-on for Kodi.
 
@@ -67,49 +67,62 @@ interrupt/restart an already playing stream when the quality setting changes.
   is enough user value to justify the additional Kodi UI complexity
 - sleep timer
 - improved behaviour/recovery after a temporary network loss
-- higher-resolution official channel fanart if JazzRadio can provide suitable
-  TV/desktop assets
 
-## Publication status
+## Publication
 
-The code has been cleaned toward Kodi repository submission, but two metadata
-fields must be chosen before submission and are deliberately not invented:
+- Maintainer: Édouard Duliège
+- Source: https://github.com/edouardduliege/kodi-addon-jazzradio
+- License: GPL-3.0-or-later
+- Kodi Omega compatibility validated with `kodi-addon-checker`
 
-1. public maintainer/provider name
-2. public source repository URL
+This is an unofficial community add-on. It is not affiliated with, endorsed by,
+or supported by JazzRadio or AudioAddict.
 
-JazzRadio branding/API permission and availability of higher-resolution official
-channel artwork should also be clarified with JazzRadio / AudioAddict before public release.
+The add-on uses original community artwork and does not redistribute the
+official JazzRadio logo.
 
-GPL-3.0-or-later.
-Unofficial; not affiliated with JazzRadio or AudioAddict.
+## Changelog
 
+### 1.0.0
 
-## 0.6.1 settings fix
+Initial public release.
 
-- Restores the JazzRadio/AudioAddict account e-mail field in Kodi settings.
-- The configured e-mail remains visible so the active account can be identified.
-- The password remains masked.
-- Existing stored values are preserved by keeping the same setting IDs (`email`, `password`).
+- Linear JazzRadio playback through Kodi's native player
+- AudioAddict account authentication with cached session reuse
+- channel browsing, style filters, Popular and New views
+- favourites synchronisation
+- Premium stream quality selection
+- multiple stream-server fallback
+- dynamic Now Playing title, artist and artwork updates
+- English and French localisation
+- improved session renewal and API error handling
+- reduced unnecessary Now Playing API calls
+- safer playback-state handling
+- original community artwork clearly distinguishing the add-on from an official release
 
+### 0.6.3
 
-## 0.6.2 settings schema fix
+- Reduces unnecessary AudioAddict API calls during Now Playing updates.
+- Reuses the current session directly and only re-authenticates after HTTP 401/403.
+- Fetches detailed track metadata only when the current track changes.
+- Improves favourites error handling so API failures are no longer treated as an empty favourites list.
+- Refreshes the Kodi directory after adding or removing a favourite.
+- Improves user-facing error handling while keeping technical details in the Kodi log.
+- Opens add-on settings and exits cleanly when account credentials are missing.
+- Uses the add-on version dynamically in the HTTP User-Agent.
+- Removes unused interactive/V2 localisation strings and redundant player code.
+- Adds additional logging for previously silent file/state errors.
+
+### 0.6.2
 
 Kodi's v2 add-on settings format requires empty editable string fields to use
 a self-closing `<default/>` and `<constraints><allowempty>true</allowempty></constraints>`.
 This restores the visible JazzRadio/AudioAddict e-mail field and masked
 password field while preserving the existing setting IDs.
 
-## 0.6.3 stability and maintenance update
+### 0.6.1
 
-* Reduces unnecessary AudioAddict API calls during Now Playing updates.
-* Reuses the current session directly and only re-authenticates after HTTP 401/403.
-* Fetches detailed track metadata only when the current track changes.
-* Improves favourites error handling so API failures are no longer treated as an empty favourites list.
-* Refreshes the Kodi directory after adding or removing a favourite.
-* Improves user-facing error handling while keeping technical details in the Kodi log.
-* Opens add-on settings and exits cleanly when account credentials are missing.
-* Uses the add-on version dynamically in the HTTP User-Agent.
-* Removes unused interactive/V2 localisation strings and redundant player code.
-* Adds additional logging for previously silent file/state errors.
-
+- Restores the JazzRadio/AudioAddict account e-mail field in Kodi settings.
+- The configured e-mail remains visible so the active account can be identified.
+- The password remains masked.
+- Existing stored values are preserved by keeping the same setting IDs (`email`, `password`).

@@ -20,6 +20,7 @@ import requests
 import xbmc
 import xbmcaddon
 import xbmcvfs
+import hashlib
 
 ADDON_ID = "plugin.audio.jazzradio"
 
@@ -75,6 +76,12 @@ class AudioAddictClient:
             and self.addon.getSetting("password")
         )
 
+    def _credentials_fingerprint(self):
+        email = self.addon.getSetting("email").strip().lower()
+        password = self.addon.getSetting("password")
+        value = f"{email}\0{password}".encode("utf-8")
+        return hashlib.sha256(value).hexdigest()
+
     def has_cached_session(self):
         """Whether a reusable AudioAddict session is available locally."""
         return bool(self._session and self._session.get("session_key"))
@@ -93,18 +100,25 @@ class AudioAddictClient:
         return None
 
     def _save_session(self, data):
-        """Persist a successful login so restarts do not trigger new logins."""
-        self.session_path.write_text(
-            json.dumps(data, indent=2),
-            encoding="utf-8",
-        )
+        """Persist a successful login when possible."""
         try:
-            os.chmod(self.session_path, 0o600)
+            self.session_path.write_text(
+                json.dumps(data, indent=2),
+                encoding="utf-8",
+            )
+            try:
+                os.chmod(self.session_path, 0o600)
+            except Exception as exc:
+                self._log(
+                    f"Unable to restrict session cache permissions: {exc}",
+                    xbmc.LOGWARNING,
+                )
         except Exception as exc:
             self._log(
-                f"Unable to restrict session cache permissions: {exc}",
+                f"Unable to save session cache: {exc}",
                 xbmc.LOGWARNING,
             )
+
         self._session = data
 
     def _clear_session(self):
@@ -181,19 +195,27 @@ class AudioAddictClient:
         ):
             raise AudioAddictError(self._t(32106))
 
+        data["credentials_fingerprint"] = self._credentials_fingerprint()
+
         self._save_session(data)
         self._log("New AudioAddict session created and cached")
         return data
 
     def _ensure_session(self):
-        """Reuse a cached session, logging in only when none is available.
+        """Reuse a cached session only for the currently configured credentials."""
 
-        Session validity is checked by the actual API request.  `_get()` and
-        `_write()` transparently re-login and retry once after HTTP 401/403,
-        avoiding a separate validation request before every authenticated call.
-        """
-        if self._session and self._session.get("session_key"):
+        fingerprint = self._credentials_fingerprint()
+
+        if (
+            self._session
+            and self._session.get("session_key")
+            and self._session.get("credentials_fingerprint") == fingerprint
+        ):
             return self._session
+
+        if self._session:
+            self._clear_session()
+
         return self._login()
 
     def _get(self, path, authenticated=True, timeout=20):

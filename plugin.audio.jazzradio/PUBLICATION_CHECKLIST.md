@@ -22,14 +22,13 @@
 
 ## Before the V1 public submission
 
-- [ ] choose the public maintainer/provider name for `addon.xml`
-- [ ] create the public source repository and add its URL to `<source>`
-- [ ] decide whether to expose a public maintainer email
-- [ ] confirm branding/logo/API expectations with JazzRadio
-- [ ] ask JazzRadio whether higher-resolution TV/desktop channel artwork exists
-- [ ] add final screenshots to addon metadata if desired
-- [ ] run the official Kodi addon-checker against the final source tree
-- [ ] perform one final clean-install test from the release ZIP
+- [x] choose the public maintainer/provider name for `addon.xml`
+- [x] create the public source repository and add its URL to `<source>`
+- [x] decide on public maintainer contact: GitHub Issues only
+- [x] confirm branding/logo/API expectations with AudioAddict
+- [x] replace official JazzRadio logo/fanart with original community add-on artwork
+- [x] run the official Kodi addon-checker against the final source tree
+- [x] perform one final clean-install test from the release ZIP
 - [ ] submit to the appropriate official Kodi repository branch
 
 ## Deferred to V2
@@ -39,3 +38,4 @@
 - [ ] optional interactive controls, only if justified by actual user demand
 - [ ] sleep timer
 - [ ] graceful recovery testing after temporary network loss
+- [ ] simplify Kodi entry points by moving most logic from `default.py` and `service.py` into `resources/lib/`
