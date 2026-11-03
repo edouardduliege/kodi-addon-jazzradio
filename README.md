@@ -1,4 +1,4 @@
-# JazzRadio for Kodi — v1.0.0
+# JazzRadio for Kodi — v1.0.2
 
 Unofficial community JazzRadio / AudioAddict music add-on for Kodi.
 
@@ -41,7 +41,8 @@ the add-on does not maintain a local channel catalogue cache.
 : Image URL normalisation and Kodi `ListItem` helpers.
 
 `resources/lib/state.py`
-: Small state file stored only inside this add-on's Kodi profile directory.
+: Atomic playback-state storage inside the add-on profile, with portable Windows/Unix
+  file locks and compatibility handling for legacy directory-based locks.
 
 ## Authentication and session handling
 
@@ -58,6 +59,15 @@ cached session and performs one fresh login automatically.
 
 Changing this setting affects the next time a stream is opened. V1 does not
 interrupt/restart an already playing stream when the quality setting changes.
+
+## Reliability and security in 1.0.2
+
+- Portable cross-process playback-state locking on Windows and Unix-like systems.
+- Playback instance identifiers prevent stale track metadata from previous playbacks.
+- Authentication requests do not automatically follow redirects that could disclose credentials.
+- Playlist and stream destinations receive additional URL validation.
+- Temporary track detail failures are retried with controlled timing.
+- Favourite channel identifiers are normalized consistently.
 
 ## V2 candidates
 
@@ -82,6 +92,18 @@ The add-on uses original community artwork and does not redistribute the
 official JazzRadio logo.
 
 ## Changelog
+
+### 1.0.2
+
+Maintenance release harmonizing the AudioAddict add-on family.
+
+- Portable Windows/Unix state locking and atomic updates.
+- Hardened authenticated requests and playlist URL handling.
+- Improved playback-state isolation and metadata retry behaviour.
+- Normalized favorite IDs and improved diagnostics.
+- Preserved migration handling for legacy JazzRadio lock directories.
+
+
 
 ### 1.0.0
 

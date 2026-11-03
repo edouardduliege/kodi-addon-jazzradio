@@ -1,50 +1,36 @@
-# Kodi publication checklist
+# Kodi publication checklist — JazzRadio 1.0.2
 
-## Already addressed
+This checklist belongs at the **source repository root**, outside `plugin.audio.jazzradio/`.
 
-- [x] Python 3 add-on
-- [x] V1 feature scope frozen around linear playback
-- [x] interactive prototype code removed from V1 client
-- [x] native Kodi player UI only
-- [x] `LICENSE.txt` included
-- [x] icon and fanart declared in `addon.xml`
-- [x] English and French localisation
-- [x] API/network errors presented to users are localised
-- [x] add-on state stored in its own Kodi profile directory
-- [x] XML validation
-- [x] Python syntax compilation
-- [x] no compiled Python files included
-- [x] no analytics
-- [x] no direct Kodi database access
-- [x] no forced skin view
-- [x] session re-login logic on HTTP 401/403
-- [x] dynamic Now Playing tested in Kodi, web UI and Kore
-- [x] Linux platform target declared explicitly
-- [x] kernel-managed playback-state locking with `fcntl.flock()`
-- [x] session cache written atomically with restrictive permissions
-- [x] stream fallback validates PLS candidates with lightweight streamed GET probes
-- [x] playback starts without waiting for optional initial Now Playing metadata
-- [x] explicit missing-channel validation
-- [x] debug logging for swallowed metadata API errors in `current_track()`
-- [x] strict stream guard retained with debug diagnostics
-- [x] metadata polling interval set to 15 seconds
+## Implemented in the 1.0.2 candidate
 
-## Before the V1 public submission
+- [x] Native Kodi player; English/French localization; account-based Premium streams
+- [x] Cached sessions, renewal after HTTP 401/403, atomic session storage
+- [x] Portable Windows/Unix playback-state locking and atomic writes
+- [x] Legacy directory-lock migration retained for JazzRadio updates
+- [x] Playback instance checks to avoid stale track metadata
+- [x] Authenticated redirects disabled and playlist URL validation strengthened
+- [x] Controlled retry of transient track detail failures
+- [x] Favorite channel IDs normalized as strings
+- [x] Non-blocking playback startup, ~15 s metadata polling and stream fallback
+- [x] No bundled Python bytecode or source-repository development files in Kodi addon folder
+- [x] `addon.xml` and `.po` headers set to 1.0.2
 
-- [x] choose the public maintainer/provider name for `addon.xml`
-- [x] create the public source repository and add its URL to `<source>`
-- [x] decide on public maintainer contact: GitHub Issues only
-- [x] confirm branding/logo/API expectations with AudioAddict
-- [x] replace official JazzRadio logo/fanart with original community add-on artwork
-- [x] run the official Kodi addon-checker against the final source tree
-- [x] perform one final clean-install test from the release ZIP
-- [ ] submit to the appropriate official Kodi repository branch
+## Before submitting 1.0.2 to Kodi
 
-## Deferred to V2
+- [ ] Confirm clean upgrade from the currently installed JazzRadio release
+- [ ] Play multiple stations and verify metadata/artwork updates
+- [ ] Test add/remove favorites and context-menu status
+- [ ] Test stop/restart and switching quickly between streams
+- [ ] Check `kodi.log` for unexpected errors
+- [ ] Run the official Kodi addon-checker on the final add-on folder
+- [ ] Confirm Kodi package contains `LICENSE.txt` but no `PUBLICATION_CHECKLIST.md`
+- [ ] Submit a new PR from an up-to-date `upstream/omega` branch
 
-- [ ] per-track progress bar
-- [ ] live application of a changed stream-quality setting
-- [ ] optional interactive controls, only if justified by actual user demand
-- [ ] sleep timer
-- [ ] graceful recovery testing after temporary network loss
-- [ ] simplify Kodi entry points by moving most logic from `default.py` and `service.py` into `resources/lib/`
+## Deferred
+
+- [ ] Validate JSON authentication payload types (`null`, `[]`, `{}`) and raise `AudioAddictError` when invalid
+- [ ] End-to-end stream redirect / `getPlayingFile()` tests
+- [ ] Temporary network outage/recovery tests
+- [ ] Dynamic changes of credentials while service is active (not necessary for V1)
+- [ ] Optional V2 features: interactive controls, sleep timer, track-level progress
